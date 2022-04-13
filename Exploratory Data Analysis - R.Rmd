@@ -1,12 +1,10 @@
 ---
-title: "Day 15 EDA in R"
+title: "EDA in R"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-## Day 15: EDA in R - HOMEWORK
 
 ```{r}
 library(tidyverse)
