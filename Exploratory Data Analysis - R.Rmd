@@ -1,0 +1,111 @@
+---
+title: "Day 15 EDA in R"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Day 15: EDA in R - HOMEWORK
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+
+property <- read.csv("housepricesdata.csv")
+View(property)
+property <- as.data.frame(property)
+```
+
+### Penjelasan Kolom
+
+1.  Unit_Name - nama unit property secara lengkap
+2.  No_Rooms - banyaknya kamar, '0' berarti ruangnya tipe Studio. 1 berarti 1 bedroom, dst.
+3.  Locality, Region - alamat property
+4.  Longitude, Latitude - alamat property, tapi dalam Longitude dan Latitude
+5.  Furnished - 1 jika Fully Furnished, 0 jika Non-Furnished
+6.  Area - Luas property
+7.  TotalFacilities - Jumlah fasilitas yang ada di property tersebut
+8.  Currency - mata uang yang digunakan dalam menuliskan harga sewa tahunan
+9.  Annual_Price - harga sewa tahunan untuk satu unit property
+
+### Soal 1: Apakah Kolom Annual_Price sudah rapih?
+
+Apakah angka-angka dalam Annual_Price sudah dapat menunjukan harga sesungguhnya dari property-property yang ada di data kita? Jika dirasa belum bersih, buat column baru namanya `Clean_Price` yang merupakan nilai `Annual_Price` yang telah di'bersihkan'. Catatan: gunakan kurs 1 USD = 14 500 IDR, dan sebaiknya gunakan mata uang IDR saja.
+
+```{r}
+property = property %>%
+  mutate(Clean_Price = ifelse(Currency == 'USD', Annual_Price*14500,Annual_Price))
+property
+```
+
+Tulis jawaban di sini:
+
+Pada kolom Annual_Price nilai harga yang tertera terdapat dua jenis satuan mata uang, yaitu USD dan IDR. Maka langkah yang diambil adalah menkonversikan harga dengan satuan USD menjadi IDR dengan mengalikan dengan 14500.
+
+### Soal 2: Setelah membersihkan Annual_Price, mari kita lihat data harga untuk property tipe Studio. Apakah ada yang janggal?
+
+Perhatikan property-property dengan No_Rooms = 0 (tipe studio) dan lihat harganya. Apakah ada yang janggal? Jika ya, sebutkan kejanggalannya, dan mengapa hal tersebut kira-kira bisa terjadi?
+
+```{r}
+property %>% 
+  # layer 2: x = gender, y = salary
+  ggplot(aes(x = No_Rooms, y = Clean_Price)) +
+  # layer 3: Jitter geometry
+  geom_jitter(width = 0.1)
+```
+
+```{r}
+filter= filter(property,No_Rooms==0)
+filter
+```
+
+```{r}
+max(filter$Clean_Price)
+
+```
+
+```{r}
+maxprice_studio= filter(filter,Clean_Price==7.83e+11)
+maxprice_studio
+
+```
+
+Tuliskan jawabanmu di sini:
+
+Dilihat dari jitter plot terdpat kejanggalan pada data No_Rooms tipe studio dimana terdapat 1 No_Rooms tipe studio yang memiliki harga tahunan yang sangat tinggi, bahkan tertinggi dibanding dengan harga rumah dengan ruang yang lebih banyak. Setelah dicek ditemukan bahwa nilai Annual_Price studio tersebut sebesar 54000000 USD, sedangkan saat proses konversi ke IDR nilai tersebut akan dikalikan dengan 14500 sehingga menghasilkan harga mencapai lebih dari 700 Milyar IDR. Hal ini dapat terjadi dengan kemungkinan adanya kesalahan input Currency.
+
+### Soal 3: Sekarang, mari kita lihat kolom alamat. Especially Longitude dan Latitude. Apakah ada data yang janggal?
+
+Untuk kejanggalan di Longitude, apakah kejanggalan tersebut bisa dijelaskan? Apakah masuk akal?
+
+Untuk kejanggalan di Latitude, apakah kejanggalan tersebut bisa dijelaskan? Apakah masuk akal?
+
+Ada beberapa 'outlier' yang 'bisa dijelaskan' dan make sense, ada juga yang tidak wajar dan hampir dapat dipastikan merupakan kesalahan. Di antara Longitude dan Latitude, mana yang wajar, dan mana yang tidak wajar?
+
+```{r}
+property %>% 
+  ggplot(aes(x = Longitude, y = Latitude, label = Region))+
+  geom_point()+
+  geom_text()
+```
+
+```{r}
+max(property$Latitude)
+min(property$Latitude)
+max(property$Longitude)
+min(property$Longitude)
+```
+
+```{r}
+maxlat= filter(property,Latitude==6.3043)
+maxlat
+
+```
+
+Tuliskan jawabanmu di sini:
+
+Diketahui bahwa letak astronomis indonesia adalah 6oLU-11oLS dan 95oBT- 141oBT.Sedangkan pada dataset property terdapat nilai latitude yang lebih dari 6oLU. Dilihat pada grafik bahwa Region yang memiliki nilai latitude diluar wilayah Indonesia adalah Tangerang dan Jakarta Pusat, dimana hal ini tentu salah karena wilayah Tangerang dan Jakarta Pusat terletak pada lintang -6.18o hingga -6.19o LS. Begitu juga dengan BSD City yang seharusnya terletak pada lintang -6.3o LS.
+
+Kesalahan pada data dapat disebabkan karena kesalahan input hanya nilai positif (menandakan LU), yang seharusnya bernilai negatif (menandakan LS).
